@@ -1,0 +1,72 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI
+
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the master branch
+on:
+  push:
+    tags:
+      - v*  # Ex. v20201117
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: 'Log level'     
+        required: true
+        default: 'warning' 
+        type: choice
+        options:
+        - info
+        - warning
+        - debug 
+  schedule:
+    # Runs "At 09:00 on Monday" (see https://crontab.guru)
+    - cron: '0 9 * * 1'
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11']
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - name: get date
+        id: date
+        run: echo "date=$(date +'%Y%m%d')" >> $GITHUB_ENV
+
+      - uses: actions/checkout@v2
+      - name: get git tag
+        id: tag
+        run: echo "tag=${GITHUB_REF/refs\/tags\//}" >> $GITHUB_ENV
+
+      - uses: actions/checkout@v2
+      - name: get rep
+        id: rep
+        run: echo "rep=$(echo $GITHUB_REPOSITORY | sed 's/-docker$//')" >> $GITHUB_ENV
+
+      # Runs a single command using the runners shell
+      - name: Install buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v2
+      
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+      
+      # Runs a set of commands using the runners shell
+      - name: Build the image
+        run: |
+          docker buildx build --push \
+              --tag ${{ env.rep }}:${{ matrix.python-version }} \
+              --tag ${{ env.rep }}:${{ matrix.python-version }}-latest \
+              --tag ${{ env.rep }}:${{ matrix.python-version }}-${{ env.tag }} \
+              --build-arg PYVER=${{ matrix.python-version }} \
+              --platform linux/amd64 .
