@@ -61,5 +61,5 @@ jobs:
       - name: Build the image
         run: |
           docker buildx build --push \
-              --tag ***/akshare-docker \
+              --tag ***/akshare-docker:v1 \
               --platform linux/amd64 .
