@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: CI
+name: superset
 
 # Controls when the action will run. Triggers the workflow on push or pull request
 # events but only for the master branch
@@ -62,4 +62,4 @@ jobs:
         run: |
           docker buildx build --push \
               --tag doarvid/akshare-docker:v1 \
-              --platform linux/amd64 .
+              --platform linux/amd64 superset/
